@@ -32,7 +32,7 @@ class TestUPS(unittest.TestCase):
         self.Address = POOL.get('party.address')
         self.Sale = POOL.get('sale.sale')
         self.SaleConfig = POOL.get('sale.configuration')
-        self.UPSService = POOL.get('ups.service')
+        self.CarrierService = POOL.get('carrier.service')
         self.Product = POOL.get('product.product')
         self.Uom = POOL.get('product.uom')
         self.Account = POOL.get('account.account')
@@ -213,19 +213,6 @@ class TestUPS(unittest.TestCase):
                 }])]
             }])
 
-        self.ups_service, = self.UPSService.create([{
-            'name': 'Next Day Air',
-            'code': '01',
-        }])
-
-        self.ups_service2, = self.UPSService.create([{
-            'name': 'Second Next Day Air',
-            'code': '02',
-        }])
-
-        self.SaleConfig.create([{
-            'ups_service_type': self.ups_service.id,
-        }])
         self.company, = self.Company.create([{
             'party': company_party.id,
             'currency': self.currency.id,
@@ -321,6 +308,18 @@ class TestUPS(unittest.TestCase):
             'currency': self.currency.id,
         }])
 
+        self.ups_service, = self.CarrierService.create([{
+            'name': 'Next Day Air',
+            'code': '01',
+            'carrier': self.carrier,
+        }])
+
+        self.ups_service2, = self.CarrierService.create([{
+            'name': 'Second Next Day Air',
+            'code': '02',
+            'carrier': self.carrier,
+        }])
+
         self.PartyConfig.create([{
             'default_validation_carrier': self.carrier.id,
         }])
@@ -364,7 +363,7 @@ class TestUPS(unittest.TestCase):
                 'invoice_address': party.addresses[0].id,
                 'shipment_address': party.addresses[0].id,
                 'carrier': self.carrier.id,
-                'ups_service_type': self.ups_service.id,
+                'service': self.ups_service.id,
                 'ups_saturday_delivery': True,
                 'lines': [
                     ('create', [{
@@ -480,7 +479,7 @@ class TestUPS(unittest.TestCase):
                 'invoice_address': party.addresses[0].id,
                 'shipment_address': party.addresses[0].id,
                 'carrier': self.carrier.id,
-                'ups_service_type': self.ups_service2.id,
+                'service': self.ups_service2.id,
                 'ups_saturday_delivery': True,
                 'lines': [
                     ('create', [{
@@ -559,7 +558,7 @@ class TestUPS(unittest.TestCase):
                 result = generate_label.default_ups_config({})
 
                 self.assertEqual(
-                    result['ups_service_type'], shipment.ups_service_type.id
+                    result['service'], shipment.service.id
                 )
                 self.assertEqual(
                     result['ups_package_type'], shipment.ups_package_type
@@ -568,7 +567,7 @@ class TestUPS(unittest.TestCase):
                     result['ups_saturday_delivery'], True
                 )
 
-                generate_label.ups_config.ups_service_type = self.ups_service2
+                generate_label.ups_config.service = self.ups_service2
                 # Customer Supplied Package
                 generate_label.ups_config.ups_package_type = '02'
                 generate_label.ups_config.ups_saturday_delivery = False
@@ -588,7 +587,7 @@ class TestUPS(unittest.TestCase):
             self.assertEqual(shipment.carrier, self.carrier)
             self.assertNotEqual(shipment.cost, Decimal('0'))
             self.assertEqual(shipment.cost_currency, self.currency)
-            self.assertEqual(shipment.ups_service_type, self.ups_service2)
+            self.assertEqual(shipment.service, self.ups_service2)
             self.assertEqual(shipment.ups_package_type, '02')
             self.assertEqual(shipment.ups_saturday_delivery, False)
             self.assertTrue(
@@ -697,7 +696,7 @@ class TestUPS(unittest.TestCase):
                     'invoice_address': self.sale_party.addresses[0].id,
                     'shipment_address': self.sale_party.addresses[0].id,
                     'carrier': self.carrier.id,
-                    'ups_service_type': self.ups_service.id,
+                    'service': self.ups_service.id,
                     'ups_saturday_delivery': True,
                     'lines': [
                         ('create', [{
